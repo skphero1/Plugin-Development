@@ -1,4 +1,95 @@
 # Atelier Page Builder
+I built Atelier as a standard WordPress plugin using plain PHP, JavaScript, and CSS. There was no separate PHP framework such as Laravel or Symfony—WordPress itself provides the APIs, database access, permissions, and editor integration.
+
+Here’s how I developed it.
+1. Defined a small first version
+Elementor is a large product, so I started with its basic workflow:
+- Add content blocks.
+- Select a block and change its settings.
+- Reorder blocks.
+- Save the layout.
+- Display that layout on the published page.
+Atelier uses original code and styling. I didn’t copy Elementor’s source code.
+2. Created the plugin structure
+The main files are:
+atelier-builder/
+├── atelier-builder.php    WordPress integration and rendering
+├── assets/
+│   ├── editor.js          Visual editor interactions
+│   └── editor.css         Editor appearance
+├── tests/                 Editor and WordPress tests
+└── dev/                   Local development and packaging tools
+The comment header in atelier-builder.php tells WordPress the plugin’s name, version, requirements, and license. That is what makes it appear in your Plugins dashboard.
+3. Connected PHP to WordPress
+I used WordPress hooks—functions that run at specific points in WordPress’s lifecycle.
+Hook or API	What Atelier uses it for
+register_post_meta()	Registers the page’s layout data
+add_meta_box()	Adds the builder panel to the page editor
+admin_enqueue_scripts	Loads the editor’s JavaScript and CSS
+save_post_page	Saves the layout when you save a page
+the_content	Displays the saved layout on the published page
+
+
+The layout is stored in WordPress’s existing post metadata, under _atelier_layout. I didn’t create a custom database table.
+4. Built the editor with JavaScript
+The editor uses vanilla JavaScript, meaning JavaScript without React, Vue, or another frontend framework.
+
+Each block is a JavaScript object containing settings such as:
+{
+  "type": "heading",
+  "content": "Welcome to my website",
+  "align": "center",
+  "color": "#222222",
+  "size": 48,
+  "padding": 24
+}
+All the blocks form an array. When you add, edit, duplicate, delete, or reorder a block, JavaScript updates that array and redraws the canvas.
+
+It also writes the layout into a hidden form field as JSON. When you click WordPress’s Update or Publish, that field is submitted with the page.
+5. Added saving and security checks
+PHP reads the submitted JSON, validates it, and stores the cleaned layout.
+
+Before saving, it checks:
+- A WordPress nonce, which helps protect against forged requests.
+- Whether the current user can edit that page.
+- Whether the block types and settings are allowed.
+- Whether URLs, colors, sizes, and spacing are valid.
+When displaying the page, text and attributes are escaped so content cannot become executable HTML or JavaScript.
+6. Converted saved blocks into HTML
+On the public page, PHP reads the saved layout and renders each block:
+- Heading → <h2>
+- Text → <p>
+- Button → <a>
+- Image → <img>
+- Spacer → an element with a defined height
+If the layout is empty, WordPress displays the page’s normal content.
+
+The overall flow is:
+
+Editor controls → JavaScript layout → JSON form field → PHP validation → WordPress metadata → HTML output
+7. Tested it locally
+These were the development tools:
+Tool	Purpose
+Codex cloud workspace and terminal	Writing files and running commands
+Node.js and npm	Running JavaScript tests
+jsdom	Testing editor interactions in a simulated browser DOM
+Docker Compose	Running a local WordPress development site
+WordPress with PHP 8.3	Testing the actual plugin integration
+MariaDB	Providing WordPress’s database
+Git and GitHub	Saving and uploading version history
+Python’s ZIP library	Building the installable plugin ZIP
+
+
+I tested adding and editing blocks, reordering, duplication, deletion, saving, permission checks, sanitization, and frontend rendering. I also requested a published page over HTTP to verify that WordPress actually returned the builder’s output.
+
+The JavaScript tests used a simulated DOM; I didn’t perform a full visual browser review.
+8. Packaged and uploaded it
+Finally, I created a ZIP containing the runtime plugin files inside an atelier-builder folder. Development dependencies such as node_modules were excluded.
+
+Then I committed the source and ZIP to GitHub and added the version tag v0.1.0.
+
+For learning, I’d suggest starting with a tiny plugin that adds one text field to a page, saves it as metadata, and displays it on the frontend. That teaches the same WordPress foundations Atelier uses. Once that works, add JavaScript controls and multiple block types.
+
 
 An original WordPress page builder prototype, inspired by the visual editing workflow of Elementor. No Elementor code or assets are used.
 
