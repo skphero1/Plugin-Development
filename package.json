@@ -1,0 +1,7 @@
+{
+  "name": "atelier-page-builder",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": { "test": "node --check assets/editor.js && node tests/editor.cjs" },
+  "devDependencies": { "jsdom": "26.1.0" }
+}

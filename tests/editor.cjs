@@ -1,0 +1,30 @@
+const { JSDOM } = require('jsdom');
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const dom = new JSDOM('<input id="atelier-layout" value="[]"><div id="atelier-app"></div>', { runScripts: 'outside-only' });
+const { document, Event, KeyboardEvent } = dom.window;
+dom.window.eval(fs.readFileSync('assets/editor.js', 'utf8'));
+const click = text => {
+  const el = [...document.querySelectorAll('button')].find(el => el.textContent === text);
+  assert.ok(el, 'Missing button: ' + text); el.click();
+};
+const saved = () => JSON.parse(document.getElementById('atelier-layout').value);
+click('+ Heading'); click('+ Text'); click('+ Button'); click('+ Image'); click('+ Spacer');
+assert.equal(saved().length, 5);
+click('Move up'); assert.equal(saved()[3].type, 'spacer');
+click('Move down'); assert.equal(saved()[4].type, 'spacer');
+click('Duplicate'); assert.equal(saved().length, 6);
+click('Remove block'); assert.equal(saved().length, 5);
+document.querySelector('.atelier-item').dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+const text = document.querySelector('.atelier-inspector textarea');
+text.value = '<script>alert(1)</script>'; text.dispatchEvent(new Event('change'));
+assert.equal(saved()[0].content, '<script>alert(1)</script>');
+assert.equal(document.querySelector('.atelier-item script'), null);
+click('center'); assert.equal(saved()[0].align, 'center');
+click('Mobile'); assert.equal(document.querySelector('.atelier-canvas').style.maxWidth, '375px');
+click('Desktop'); assert.equal(document.querySelector('.atelier-canvas').style.maxWidth, '100%');
+// The persisted model survives a fresh editor mount.
+dom.window.eval(fs.readFileSync('assets/editor.js', 'utf8'));
+assert.equal(document.querySelectorAll('.atelier-item').length, 5);
+assert.equal(document.querySelector('.atelier-item h2').textContent, '<script>alert(1)</script>');
+console.log('Editor passed: all block types, reorder, duplicate, delete, keyboard selection, styling, safe text, viewport and reload.');
